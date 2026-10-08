@@ -13,6 +13,7 @@
 ├── .editorconfig    # 编辑器统一格式（编码、换行、缩进）
 ├── .gitattributes   # Git 换行符与二进制文件处理
 ├── .gitignore       # 忽略系统文件、编辑器配置、依赖与构建产物、本地密钥
+├── LICENSE          # MIT 许可证
 └── README.md
 ```
 
@@ -22,3 +23,7 @@
 - 提交信息写清楚改了什么、为什么改。
 - 文件统一使用 UTF-8 编码、LF 换行，缩进规则见 `.editorconfig`。
 - 本地密钥、令牌等写在 `.env` 中（已被忽略），需要共享的变量名放在 `.env.example` 里。
+
+## 许可证
+
+本项目基于 [MIT 许可证](LICENSE) 开源。
