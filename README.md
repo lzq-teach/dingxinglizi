@@ -2,9 +2,17 @@
 
 把人和 AI 要做的事分开：人在表单里定下产品定位、业务与功能、专项设置、约束与偏好，生成一份项目简报交给 AI 开发。简报写明哪些事人已决定、哪些交给 AI、哪些还没决定，以及按什么阶段交付和验收。可选调用本机 Codex 生成项目级 `AGENTS.md` 草案。
 
-## 快速开始
+## 在线使用
 
-表单要先在你的电脑上启动一个小服务，再用浏览器打开。只需要 Python 3，不依赖第三方包。
+网址：https://lzq-teach.github.io/dingxinglizi/
+
+- 不用安装，打开即用。填写内容只保存在你自己的浏览器里，不会上传。
+- 网页版不能「生成 AGENTS.md」（需要调用你电脑上的 Codex），其余功能都能用。
+- 每次合并到 `main`，网站会自动更新（`.github/workflows/pages.yml`）。首次使用需要仓库主人在 Settings → Pages 把 Source 设为「GitHub Actions」，然后在 Actions 里重新运行一次「Deploy to GitHub Pages」。
+
+## 在本机运行
+
+要「生成 AGENTS.md」，需要在你的电脑上启动一个小服务，再用浏览器打开。只需要 Python 3，不依赖第三方包。
 
 1. 启动服务（窗口保持打开，关掉窗口服务就停了）：
    - **macOS**：双击 `启动表单.command`
@@ -63,6 +71,7 @@
 ├── tests/               # 表单逻辑与本机服务的测试
 ├── 启动表单.command      # macOS 双击启动
 ├── 启动表单.bat          # Windows 双击启动
+├── .github/workflows/pages.yml # 合并到 main 后发布 web/ 到 GitHub Pages
 ├── .openai/hosting.json # 静态托管配置（发布 web/ 目录）
 └── LICENSE
 ```
