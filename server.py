@@ -59,6 +59,10 @@ def generate(brief):
 class Handler(SimpleHTTPRequestHandler):
     def __init__(self,*a,**kw): super().__init__(*a,directory=str(BASE/'web'),**kw)
     def log_message(self,*a): pass
+    def end_headers(self):
+        # Revalidate page files on every load so an update never mixes old and new scripts.
+        if not self.path.startswith('/api/'): self.send_header('Cache-Control','no-cache')
+        super().end_headers()
     def valid_host(self): return self.headers.get('Host') in (f'127.0.0.1:{PORT}',f'localhost:{PORT}')
     def reply(self,status,data):
         blob=json.dumps(data,ensure_ascii=False).encode()
