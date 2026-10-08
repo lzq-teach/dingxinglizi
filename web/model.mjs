@@ -15,6 +15,8 @@ export const fields=[
  {id:'roleRules',step:1,label:'角色分工',kind:'textarea',placeholder:'如：员工只处理本人任务；店长可分配本店任务'},
  {id:'features',step:1,label:'首版功能',kind:'multi',options:[o('accounts','账号与权限'),o('crud','数据管理'),o('orders','订单 / 交易'),o('payment','支付 / 退款'),o('booking','预约 / 排班'),o('approval','审批'),o('search','搜索 / 筛选'),o('files','文件 / 图片'),o('notifications','消息提醒'),o('reports','报表 / 导出'),o('ai','AI 能力'),o('sync','第三方联动'),o('other','其他')]},
  {id:'flow',step:1,label:'核心流程',kind:'textarea',placeholder:'如：客户预约 → 店长分配 → 员工服务 → 客户确认'},
+ {id:'pages',step:1,label:'页面清单',kind:'textarea',placeholder:'有哪些页面、各自做什么，如：预约列表（按日期筛选）；预约详情（分配员工）'},
+ {id:'entities',step:1,label:'数据对象',kind:'textarea',placeholder:'要记录哪些数据及关键信息，如：客户（姓名、手机号）；预约（时间、服务项目、状态）'},
  {id:'rules',step:1,label:'业务规则',kind:'textarea',placeholder:'如：取消预约须提前 2 小时'},
  {id:'excluded',step:1,label:'不做 / 延后',kind:'textarea',placeholder:'本次不需要的功能'},
  {id:'scope',step:2,label:'数据可见范围',kind:'single',when:d=>has(d.features,'accounts')||has(d.types,'admin')||has(d.audience,'companies'),options:[o('own','仅本人'),o('org','所属团队 / 门店'),o('tenant','企业间严格隔离'),o('shared','团队共享'),o('unsure','待确认')]},
@@ -49,13 +51,23 @@ export const fields=[
  {id:'collaboration',step:3,label:'参与方式',kind:'single',options:[o('milestones','关键节点看结果'),o('visual','先看样板 / 原型'),o('delegate','只做关键决定'),o('together','一起讨论方案')]},
  {id:'notes',step:3,label:'补充说明',kind:'textarea',placeholder:'其他功能、具体日期或特殊要求'}
 ];
-export const blank=()=>Object.fromEntries(fields.map(f=>[f.id,f.kind==='multi'?[]:'']));
+// answers：简报页「需要你决定」各问题的答复，键为问题 id。
+export const blank=()=>({...Object.fromEntries(fields.map(f=>[f.id,f.kind==='multi'?[]:''])),answers:{}});
 export const visible=(f,d)=>!f.when||f.when(d);
 export const answered=v=>Array.isArray(v)?v.length>0:typeof v==='string'&&v.trim().length>0;
 export function activeData(d){return Object.fromEntries(fields.filter(f=>visible(f,d)).map(f=>[f.id,d[f.id]??(f.kind==='multi'?[]:'')]))}
 export function label(id,v){const f=fields.find(f=>f.id===id);if(!f)return '';return Array.isArray(v)?v.map(x=>label(id,x)).join('、'):f.options?.find(x=>x.value===v)?.label||String(v||'')}
-export const validate=d=>fields.filter(f=>f.required&&!answered(d[f.id])).map(f=>({id:f.id,message:`请填写${f.label}`}));
-export function normalize(input){if(!input||typeof input!=='object'||Array.isArray(input))throw Error('项目格式不正确');const d=blank();for(const f of fields){const v=input[f.id];if(v===undefined)continue;if(f.kind==='multi'){if(!Array.isArray(v)||v.length>f.options.length||v.some(x=>typeof x!=='string'||!f.options.some(o=>o.value===x)))throw Error(`${f.label}含无效选项`);d[f.id]=[...new Set(v)]}else{if(typeof v!=='string'||v.length>(f.max||5000))throw Error(`${f.label}格式或长度无效`);if(f.options&&v&&!f.options.some(o=>o.value===v))throw Error(`${f.label}含无效选项`);d[f.id]=v}}return d}
+// 交付目标越接近上线，开发前需要人定下的内容越多。
+export const REQUIRED_BY_DEPTH={prototype:['flow','pages'],demo:['flow','entities','acceptance'],launch:['flow','entities','rules','example','acceptance']};
+export const isRequired=(f,d)=>f.required===true||has(REQUIRED_BY_DEPTH[d?.depth],f.id);
+export const validate=d=>fields.filter(f=>visible(f,d)&&isRequired(f,d)&&!answered(d[f.id])).map(f=>({id:f.id,step:f.step,message:`请填写${f.label}`}));
+// 选项会随版本调整：已停用的选项只移除该项并记入 issues，不让整份草稿失效。
+export function normalize(input,issues=[]){if(!input||typeof input!=='object'||Array.isArray(input))throw Error('项目格式不正确');const d=blank();
+ for(const f of fields){const v=input[f.id];if(v===undefined||v===null)continue;
+  if(f.kind==='multi'){if(!Array.isArray(v)){issues.push(`${f.label}格式无效，已清空`);continue}const kept=v.filter(x=>typeof x==='string'&&f.options.some(o=>o.value===x));if(kept.length<v.length)issues.push(`${f.label}中已停用的选项已移除`);d[f.id]=[...new Set(kept)]}
+  else{const max=f.max||5000;if(typeof v!=='string'){issues.push(`${f.label}格式无效，已清空`);continue}if(f.options&&v&&!f.options.some(o=>o.value===v)){issues.push(`${f.label}的选项已停用，已清空`);continue}if(v.length>max)issues.push(`${f.label}超出 ${max} 字，已截断`);d[f.id]=v.slice(0,max)}}
+ const a=input.answers;if(a&&typeof a==='object'&&!Array.isArray(a))for(const [k,v] of Object.entries(a).slice(0,200))if(k.length<=100&&typeof v==='string')d.answers[k]=v.slice(0,2000);
+ return d}
 export function recommend(raw){const d={...blank(),...activeData(raw)},ai=isAI(d),pay=isPayment(d),auto=has(d.types,'automation'),legacy=['existing','replace'].includes(d.stage)||has(d.data,'legacy');
  let mode='范围与方案确认',first='先提出核心流程与交付范围，确认关键分歧。';
  if(d.depth==='prototype'){mode='原型共创';first='先做代表性页面与可点击流程，确认业务和视觉。'}
@@ -65,36 +77,92 @@ export function recommend(raw){const d={...blank(),...activeData(raw)},ai=isAI(d
  else if(auto){mode='自动化流程验证';first='先跑通一项任务，验证重复触发、重试与中断恢复。'}
  else if(has(d.types,'web')&&['brand','content'].includes(d.webFocus)&&!pay){mode='内容与体验共创';first='先确认内容层级和代表性页面，验证阅读与转化路径。'}
  if(legacy)first='先核对现有系统与应保留行为。'+first;
- const checks=[],architecture=[d.customization==='custom'?'按明确的定制范围评估实现，通用能力仍优先复用。':'默认效率优先：先评估成熟项目、模板和组件，用关键流程验证后做最小改造；不适配的部分再定制。'],pending=[];
- if(ai){checks.push('用代表性样本评估准确性、依据和任务完成情况，保留失败样本。');architecture.push('划分模型、知识源、工具和评测边界，再判断是否需要检索、记忆或多 Agent。');if(!d.autonomy||d.autonomy==='unsure')pending.push('Agent 可执行哪些动作，哪些需要人工确认？');if(!answered(d.knowledge)||has(d.knowledge,'unsure'))pending.push('允许使用哪些知识源，哪些数据不能发给模型？');if(has(d.agentJob,'tools')&&d.autonomy==='suggest')pending.push('已选择工具操作和只提供建议：是否仅生成操作方案？')}
+ const checks=[],architecture=[d.customization==='custom'?'按明确的定制范围评估实现，通用能力仍优先复用。':'默认效率优先：先评估成熟项目、模板和组件，用关键流程验证后做最小改造；不适配的部分再定制。'];
+ // questions：需要人决定的问题；delegated：明确交给 AI 的事项；covers 标出对应字段，避免和字段本身的「待定 / 待推荐」重复列出。
+ const questions=[],delegated=[],prepare=[],ask=(id,q,covers)=>questions.push({id,q,covers}),delegate=(text,covers)=>delegated.push({text,covers});
+ if(ai){checks.push('用代表性样本评估准确性、依据和任务完成情况，保留失败样本。');architecture.push('划分模型、知识源、工具和评测边界，再判断是否需要检索、记忆或多 Agent。');if(!d.autonomy||d.autonomy==='unsure')ask('agent-autonomy','Agent 可执行哪些动作，哪些需要人工确认？','autonomy');if(!answered(d.knowledge)||has(d.knowledge,'unsure'))ask('agent-knowledge','允许使用哪些知识源，哪些数据不能发给模型？','knowledge');if(has(d.agentJob,'tools')&&d.autonomy==='suggest')ask('agent-tools','已选择工具操作和只提供建议：是否仅生成操作方案？')}
  if(auto){checks.push('核对重复触发、部分成功、重试与恢复，避免重复执行。');architecture.push('按触发方式设计任务状态与重试；仅在规模需要时引入独立队列。')}
  if(has(d.types,'admin')){checks.push('列表、详情与操作使用一致权限；走通录入到处理结果。');architecture.push('围绕业务对象和权限复用列表、表单与后台组件。')}
  if(has(d.types,'mini')){checks.push('核对微信授权返回、弱网与前后台切换；上传和真机可用分别验收。');architecture.push('划定小程序、后台 API 与微信平台的能力边界，多端共用业务规则。')}
- if(has(d.types,'desktop')||has(d.types,'mobile')){checks.push('在目标设备检查安装、更新和本地数据；有离线需求时验证恢复同步。');architecture.push('根据目标系统、离线与硬件需求选择原生、跨平台或封装方案。');if(!answered(d.platform)||has(d.platform,'unsure'))pending.push('首版必须支持哪些设备与操作系统？')}
+ if(has(d.types,'desktop')||has(d.types,'mobile')){checks.push('在目标设备检查安装、更新和本地数据；有离线需求时验证恢复同步。');architecture.push('根据目标系统、离线与硬件需求选择原生、跨平台或封装方案。');if(!answered(d.platform))ask('platform','首版必须支持哪些设备与操作系统？','platform')}
  if(has(d.types,'web')){checks.push('检查响应式、关键交互和刷新恢复；内容型站点按需要检查搜索发现。');architecture.push(['brand','content'].includes(d.webFocus)?'先判断静态内容是否足够，只为必要业务引入服务端。':'按公开内容、登录和业务写入需求确定前后端边界。')}
  if(d.types.length>1)checks.push('核对各端的保存、读取、状态和显示是否一致。');
- if(pay){checks.push('验证金额、重复提交、支付取消竞争及退款；按实际风险安排独立审核。');architecture.push('明确订单、交易与履约关系、幂等和历史快照。');if(!answered(d.paymentRules)||has(d.paymentRules,'unsure'))pending.push('支付、退款、超时与合并交易采用什么规则？')}
+ if(pay){checks.push('验证金额、重复提交、支付取消竞争及退款；按实际风险安排独立审核。');architecture.push('明确订单、交易与履约关系、幂等和历史快照。');if(!answered(d.paymentRules)||has(d.paymentRules,'unsure'))ask('payment-rules','支付、退款、超时与合并交易采用什么规则？','paymentRules')}
  if(d.scope==='tenant'||has(d.data,'sensitive'))checks.push('验证数据隔离和敏感信息边界，按上线要求核对审计与恢复。');
  if(legacy)checks.push('保护既有数据，验证兼容、迁移与恢复边界。');
  if(d.volume==='large'||d.growth==='high'){checks.push('以代表性数据和受限资源测量关键请求成本。');architecture.push('分开评估并发、历史数据、附件和外部调用成本，验证分页、索引与生命周期。')}
  if(d.depth==='prototype')checks.push('本轮确认流程与视觉；模拟服务不算真实集成证据。');
  if(d.depth==='demo')checks.push('核心数据持久化、演示环境可重置，明确真实与模拟服务。');
  if(d.depth==='launch')checks.push('绑定实际版本与环境，验证必要的备份恢复、真实集成与发布结果。');
- if(hasExternal(d)&&d.integration==='real'&&d.accessReady!=='ready')pending.push('真实接入所需的平台账号、资质或接口是否已就绪？');
- if(d.depth==='launch'&&d.integration==='mock')pending.push('哪些模拟服务必须在上线前替换为真实服务？');
- if(d.hosting==='local'&&(d.integration==='real'||has(d.knowledge,'web')))pending.push('本机运行是否允许联网调用外部服务？');
- if(d.roles.length>1&&!answered(d.roleRules))pending.push('明确各角色可查看的数据与可执行的操作。');
- if(!answered(d.example))pending.push('补一份典型输入及预期结果，作为开发与验收样例。');
- if(legacy&&!answered(d.resources))pending.push('提供现有代码、接口或数据资料的位置，核对可复用部分。');
- if(!answered(d.flow))pending.push('由助手提出主流程草案，核对实际业务。');
- if(!answered(d.rules)&&(pay||has(d.features,'booking')||has(d.features,'approval')))pending.push('确认数量口径、状态变化、取消和异常处理规则。');
- if(!answered(d.acceptance))pending.push('由助手提出验收场景，明确完成标准。');
- if(has(d.types,'other'))pending.push('根据业务目标推荐产品形态。');
- if(!d.depth||d.depth==='advice')pending.push('推荐本轮交付范围与取舍。');
+ if(d.depth==='launch'&&d.integration==='mock')ask('mock-replace','哪些模拟服务必须在上线前替换为真实服务？');
+ if(d.hosting==='local'&&(d.integration==='real'||has(d.knowledge,'web')))ask('local-network','本机运行是否允许联网调用外部服务？');
+ if(d.roles.length>1&&!answered(d.roleRules))ask('role-rules','各角色分别能查看哪些数据、执行哪些操作？','roleRules');
+ if(!answered(d.example))ask('example','给一份典型输入及预期结果，作为开发与验收样例。','example');
+ if(!answered(d.rules)&&(pay||has(d.features,'booking')||has(d.features,'approval')))ask('rules','数量口径、状态变化、取消和异常分别按什么规则处理？','rules');
+ if(!answered(d.flow))delegate('由 AI 提出主流程草案，开工前与人核对。','flow');
+ if(!answered(d.acceptance))delegate('由 AI 提出验收场景，明确完成标准。','acceptance');
+ if(has(d.types,'other'))delegate('根据业务目标推荐产品形态，开工前与人确认。');
+ if(!d.depth||d.depth==='advice')delegate('推荐本轮交付范围与取舍，开工前与人确认。','depth');
+ // 需要人准备的账号与资料：AI 无法代办，只在要真实接入时列出。
+ const real=d.depth==='launch'||['real','mixed'].includes(d.integration);
+ if(ai&&(real||d.depth==='demo'))prepare.push('大模型服务的账号与 API Key（或指定使用哪家模型服务）。');
+ if(real){
+  if(has(d.types,'mini'))prepare.push('微信小程序 AppID，以及完成认证的小程序主体。');
+  if(pay)prepare.push(has(d.types,'mini')?'微信支付商户号，以及支付配置权限。':'支付服务的商户账号（如微信支付、支付宝）。');
+  if(has(d.features,'notifications'))prepare.push('消息通道账号（短信、邮件或订阅消息模板）。');
+  if(has(d.features,'sync'))prepare.push('需要联动的第三方系统的接口文档与测试账号。');
+  if(d.distribution==='store')prepare.push('应用商店开发者账号（如 Apple、Google）。');
+  if(['cloud','existing','private'].includes(d.hosting))prepare.push('服务器或云平台账号，以及部署权限。');
+  if(d.depth==='launch'&&d.hosting!=='local'&&(has(d.types,'web')||has(d.types,'mini')||has(d.types,'admin')))prepare.push('正式域名；面向中国大陆公开访问时，还需完成 ICP 备案。');
+  if(hasExternal(d)&&!prepare.length)prepare.push('真实接入所需的平台账号、资质或接口。');
+ }
+ if(legacy&&!answered(d.resources))prepare.push('现有代码、接口文档或数据样本的位置，用于核对可复用部分。');
  const participation={milestones:'关键节点集中看结果，常规实现自主推进。',visual:'先看样板与原型，再扩展；必要的技术验证可先行。',delegate:'助手推荐方案，用户决定实质业务取舍和新增授权。',together:'方案阶段一起讨论有效选项，确认后集中实现。'};
  const priorities={speed:'先交付最小有用闭环，保留必要验证，延期功能单列。',visual:'先验证样板与真实形态内容，再复用设计。',business:'优先角色与数据之间的完整流转。',reliability:'先验证高后果失败路径，再扩展功能。',cost:'先估算部署、存储和外部调用成本。'};
- return {mode,first,you:['业务目标与关键规则','范围取舍与实际体验反馈'],agent:['架构、实现与相关验证','可运行交付和限制说明'],checks:[...new Set(checks)],architecture:[...new Set(architecture)],pending:[...new Set(pending)],participation:participation[d.collaboration]||'按项目风险设置确认点，普通实现细节由助手负责。',priority:priorities[d.priority]||'默认交付效率优先，复用成熟方案，保留必要业务验证。'};
+ return {mode,first,you:['业务目标、关键规则与范围取舍','回答待决定事项，准备账号与资料','每个阶段结束后验收'],agent:['架构、实现与相关验证','按阶段交付，说明限制','交给 AI 的事项：给出选择与理由'],checks:[...new Set(checks)],architecture:[...new Set(architecture)],questions,delegated,prepare:[...new Set(prepare)],phases:phasesFor(d,ai,auto,legacy),participation:participation[d.collaboration]||'按项目风险设置确认点，普通实现细节由助手负责。',priority:priorities[d.priority]||'默认交付效率优先，复用成熟方案，保留必要业务验证。'};
 }
-export function brief(d){const p=recommend(d),items=fields.filter(f=>visible(f,d)&&answered(d[f.id]));return [`# ${d.name.trim()||'未命名项目'} · 项目简报`,'',`状态：${validate(d).length?'草稿，必填信息未完成':'必填信息已完成，业务细节见待确认项'}`,'','## 用户填写',...items.map(f=>`- ${f.label}：${label(f.id,d[f.id])}`),'','## 协作建议（由选项生成，尚非批准方案）',`- 方式：${p.mode}`,`- 首份成果：${p.first}`,`- 参与方式：${p.participation}`,`- 优先级：${p.priority}`,'','## 架构判断方向',...(p.architecture.length?p.architecture:['先结合目标确认业务关系、数据和运行边界。']).map(s=>'- '+s),'','## 验证关注点',...p.checks.map(s=>'- '+s),'','## 待确认',...(p.pending.length?p.pending:['暂无规则识别出的额外缺口，仍需结合实际业务核对。']).map(s=>'- '+s),'','## 执行要求','读取适用项目规则与 focused-delivery。区分用户选择、建议和待定项，提出适配本项目的技术架构、业务关系、实现范围与验收方案。只集中询问会实质改变业务、成本、权限或范围的问题，其余可逆细节自主处理。未填写不视为同意或不需要。','本表不授予真实交易、外部发信、删除数据或公开发布的执行权限。'].join('\n')}
+// 分阶段交付：每个阶段写清做什么、人怎么验收；AI 做完一个阶段就停下等验收。
+function phasesFor(d,ai,auto,legacy){
+ const core={title:'核心流程贯通',do:'先做通一条完整业务链路：界面、接口与数据保存贯通，再扩展其他功能。',check:'按验收场景走通核心流程，刷新或重启后数据仍在。'};
+ const plans={
+  prototype:[{title:'代表页面与主流程',do:'按页面清单做出代表性页面，串起可点击的核心流程，数据可模拟。',check:'人按核心流程点一遍，确认流程与视觉。'},{title:'补齐页面与状态',do:'补齐其余页面，以及空数据、加载中、出错等状态。',check:'逐页对照页面清单核对。'}],
+  demo:[core,{title:'首版功能补齐',do:'补齐其余首版功能与角色权限。',check:'按验收场景逐条核对，各角色分别走一遍。'},{title:'演示准备',do:'准备演示数据，演示环境可重置，标明哪些服务是模拟的。',check:'人完整演示一遍。'}],
+  launch:[core,{title:'功能与权限补齐',do:'补齐其余首版功能、角色权限与异常处理。',check:'按验收场景逐条核对，包括失败和越权的情况。'},...(hasExternal(d)?[{title:'真实服务接入',do:'把模拟服务替换为真实接入，处理失败、超时与重试。',check:'用真实账号在测试环境验证，模拟通过不算数。'}]:[]),{title:'上线验证',do:'部署到正式环境，验证备份恢复与发布结果。',check:'人在正式环境走一遍验收场景，再决定是否对外发布。'}]};
+ let list=plans[d.depth]||[{title:'范围与方案确认',do:'先提出本轮交付范围、取舍与分阶段计划，不写代码。',check:'人确认范围与计划后再开工。'}];
+ if(d.depth==='demo'||d.depth==='launch'){
+  if(ai)list=[{title:'Agent 效果验证',do:'先用典型输入验证效果、失败处理与工具边界，保留失败样本。',check:'人查看样例输入与输出，确认效果可接受。'},...list];
+  else if(auto)list=[{title:'单项任务跑通',do:'先跑通一项任务，验证重复触发、重试与中断恢复。',check:'人触发一次任务并核对结果。'},...list];
+ }
+ if(legacy)list=[{title:'现有系统核对',do:'核对现有系统必须保留的行为与数据，此阶段不改动现有数据。',check:'人确认需要保留的行为清单。'},...list];
+ return list;
+}
+// 选项里「待推荐 / 待估」表示交给 AI 推荐或估算；「待定 / 待确认」表示人还没决定。
+export const AI_DECIDES='交给 AI 决定';
+export function intentOf(id,v){const opt=fields.find(f=>f.id===id)?.options?.find(x=>x.value===v);if(!opt)return null;return /^待(推荐|估)$/.test(opt.label)?'ai':/^待(定|确认)$/.test(opt.label)?'open':null}
+// 人机交接：把表单整理成「人已决定 / 交给 AI / 还没决定 / 需要人准备 / 开发阶段」。
+export function handoff(raw){const d={...blank(),...activeData(raw)},p=recommend(raw),answers=raw.answers||{};
+ const covered=new Set([...p.questions,...p.delegated].map(x=>x.covers).filter(Boolean)),questions=[...p.questions],decided=[],ai=p.delegated.map(x=>x.text);
+ for(const f of fields){if(!visible(f,d)||!answered(d[f.id]))continue;const values=Array.isArray(d[f.id])?d[f.id]:[d[f.id]],intent=values.map(v=>intentOf(f.id,v)).find(Boolean);
+  if(!intent)decided.push({label:f.label,value:label(f.id,d[f.id])});
+  else if(covered.has(f.id))continue;
+  else if(intent==='ai')ai.push(`${f.label}：由 AI ${label(f.id,d[f.id])==='待估'?'估算':'推荐'}`);
+  else questions.push({id:'field:'+f.id,label:f.label,q:`${f.label}还没定（当前选了「${label(f.id,d[f.id])}」），请定下来。`})}
+ const settled=[],open=[];
+ for(const q of questions){const a=typeof answers[q.id]==='string'?answers[q.id].trim():'';if(!a)open.push(q);else if(a===AI_DECIDES)ai.push(`${q.q}（人已交给 AI 决定）`);else settled.push({...q,answer:a})}
+ return {decided,settled,ai:[...new Set(ai)],open,questions,prepare:p.prepare,phases:p.phases,ready:!validate(raw).length&&!open.length}}
+export const AI_RULES=['开工前读取适用的项目规则与 focused-delivery；先复述目标，列出实施计划，以及你对「交给 AI 决定」各项的选择和理由，等人确认后再写代码。','「人已决定」是约束，不得擅自更改；发现矛盾或做不到时，停下来说明原因并给出可选方案。','「还没决定」的事项不得自行假设，开工前集中提问。','表单里没填的选填项：普通、可逆的实现细节自行处理，并在计划中说明；会改变业务、成本、权限或范围的，先问人。没填不代表同意或不需要。','按开发阶段推进。每个阶段结束后停下，汇报完成内容和验证证据（截图、测试结果、可访问的地址），等人验收后再继续。','需要人准备的账号、密钥和资料，用到时再向人索取；密钥只配置在运行环境里，不写进代码、对话或简报。','本简报不授权真实交易、对外发送消息、删除数据或公开发布；这些操作必须单独获得人的确认。'];
+const indent=v=>String(v).replace(/\n/g,'\n  '),item=(k,v)=>`- ${k}：${indent(v)}`;
+export function brief(d){const p=recommend(d),h=handoff(d),missing=validate(d).length;
+ const status=missing?'草稿，必填信息未完成':h.open.length?`还有 ${h.open.length} 项待人决定，AI 开工前须先问清`:'人已完成决定，可以交给 AI';
+ return [`# ${d.name.trim()||'未命名项目'} · 项目简报`,'',`状态：${status}`,'','本简报分清人已决定、交给 AI 决定和还没决定的事项。AI 按文末「给 AI 的工作规则」执行。',
+ '','## 人已决定',...h.decided.map(x=>item(x.label,x.value)),...h.settled.map(x=>x.label?item(x.label,x.answer):`- ${x.q}\n  决定：${indent(x.answer)}`),
+ '','## 交给 AI 决定',...(h.ai.length?h.ai:['无，全部事项由人决定。']).map(s=>'- '+s),
+ '','## 还没决定（AI 开工前须先问人）',...(h.open.length?h.open.map(x=>'- '+x.q):['- 无。']),
+ '','## 需要人准备',...(h.prepare.length?h.prepare:['无。']).map(s=>'- '+s),
+ '','## 开发阶段（每个阶段结束后停下，等人验收）',...h.phases.flatMap((x,i)=>[`${i+1}. ${x.title}`,`   - 做什么：${x.do}`,`   - 怎么验收：${x.check}`]),
+ '','## 协作建议（由选项生成，尚非批准方案）',`- 方式：${p.mode}`,`- 首份成果：${p.first}`,`- 参与方式：${p.participation}`,`- 优先级：${p.priority}`,
+ '','## 架构判断方向',...(p.architecture.length?p.architecture:['先结合目标确认业务关系、数据和运行边界。']).map(s=>'- '+s),
+ '','## 验证关注点',...p.checks.map(s=>'- '+s),
+ '','## 给 AI 的工作规则',...AI_RULES.map((s,i)=>`${i+1}. ${s}`)].join('\n')}
 
 export function stepProgress(d,step){const fs=fields.filter(f=>f.step===step&&visible(f,d));return {filled:fs.filter(f=>answered(d[f.id])).length,total:fs.length}}
