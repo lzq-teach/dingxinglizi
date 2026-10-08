@@ -25,6 +25,18 @@ class ServerTests(unittest.TestCase):
   try:
    status,data=self.post({'brief':'x'*30});self.assertEqual(status,422);self.assertNotIn('markdown',data)
   finally:m.generate=old
+ def raw_post(self,headers,body=b'{}'):
+  req=urllib.request.Request(self.url+'/api/generate-agents',data=body,headers=headers)
+  try:
+   with urllib.request.urlopen(req) as r:return r.status
+  except urllib.error.HTTPError as e:return e.code
+ def test_request_checks(self):
+  base={'Content-Type':'application/json','Origin':self.url,'X-Kickoff-Request':'1'}
+  self.assertEqual(self.raw_post({k:v for k,v in base.items() if k!='X-Kickoff-Request'}),403)
+  self.assertEqual(self.raw_post({**base,'Content-Type':'text/plain'}),415)
+  self.assertEqual(self.raw_post(base,b''),400)
+ def test_static_files_revalidate(self):
+  with urllib.request.urlopen(self.url+'/app.js') as r: self.assertEqual(r.headers.get('Cache-Control'),'no-cache')
  def test_foreign_host_rejected_for_head_and_get(self):
   for method in ('GET','HEAD'):
    req=urllib.request.Request(self.url+'/',method=method,headers={'Host':'evil.example:80'})

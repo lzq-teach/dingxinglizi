@@ -8,12 +8,22 @@
 
 - 不用安装，打开即用。填写内容只保存在你自己的浏览器里，不会上传。
 - 浏览器按网站域名存数据：`lzq-teach.github.io` 下的其他网页（同一 GitHub 账号的其他 Pages 项目）能读到这里的草稿。不要在草稿里写密码、密钥等敏感信息。
+- 支持网页 AI 助手接口（WebMCP）的浏览器里，页面提供一个只读工具，浏览器里的 AI 助手可以读取当前简报，但不能修改。
 - 网页版不能「生成 AGENTS.md」（需要调用你电脑上的 Codex），其余功能都能用。
-- 每次合并到 `main`，网站会自动更新（`.github/workflows/pages.yml`）。首次使用需要仓库主人在 Settings → Pages 把 Source 设为「GitHub Actions」，然后在 Actions 里重新运行一次「Deploy to GitHub Pages」。
+- 每次合并到 `main`，先自动跑测试，通过后网站自动更新（`.github/workflows/pages.yml`，需要仓库 Settings → Pages 的 Source 为「GitHub Actions」）。
 
 ## 在本机运行
 
 要「生成 AGENTS.md」，需要在你的电脑上启动一个小服务，再用浏览器打开。只需要 Python 3，不依赖第三方包。
+
+**第一次使用先做这两步：**
+
+- **下载代码**：在 GitHub 仓库页面点 Code → Download ZIP，解压到任意文件夹。
+- **安装 Python 3**：
+  - macOS：第一次运行时，系统如果提示安装「命令行开发者工具」，点安装即可。
+  - Windows：从 https://www.python.org/downloads/ 下载安装，安装时勾选「Add python.exe to PATH」。
+
+**每次使用：**
 
 1. 启动服务（窗口保持打开，关掉窗口服务就停了）：
    - **macOS**：双击 `启动表单.command`
@@ -21,7 +31,11 @@
    - 或在仓库根目录运行 `python3 server.py`（Windows 上是 `py server.py`）
 2. 浏览器打开 http://127.0.0.1:8767/
 
+第一次双击被系统拦下时：macOS 打开「系统设置 → 隐私与安全性」，点「仍要打开」；Windows 点「更多信息 → 仍要运行」。
+
 看到「无法访问此网站 / ERR_CONNECTION_REFUSED」说明服务没在运行，回到第 1 步。端口可用环境变量 `KICKOFF_PORT` 修改。
+
+浏览器按地址分别保存草稿：网页版、`127.0.0.1`、`localhost`、不同端口之间的草稿互不相通。要把网页版的草稿带到本机版，先在网页版「备份 JSON」，再到本机版「我的草稿 → 导入 JSON」。
 
 > 不能直接双击 `web/index.html` 打开：浏览器出于安全限制，不允许本地文件加载页面脚本，页面会是空白。
 
@@ -90,7 +104,7 @@ node tests/e2e.mjs                        # 浏览器走查（需要 Playwright�
 
 - `main` 为主分支，新功能和修复在独立分支上开发，通过 Pull Request 合并。
 - 提交信息写清楚改了什么、为什么改。
-- 文件统一使用 UTF-8 编码、LF 换行，缩进规则见 `.editorconfig`。
+- 文件统一使用 UTF-8 编码；除 `.bat`/`.cmd` 用 CRLF 外都用 LF 换行，规则见 `.editorconfig`。
 - 本仓库是公开的：密钥、令牌写在 `.env` 中（已被忽略），不要提交。
 
 ## 许可证

@@ -1,5 +1,5 @@
 # 把 web/ 发布到 GitHub Pages：每次合并到 main 自动更新网站。
-# 首次使用需在仓库 Settings → Pages 把 Source 设为「GitHub Actions」；未开启时跳过发布，不报错。
+# 先跑测试，通过后才发布。需要仓库 Settings → Pages 的 Source 为「GitHub Actions」。
 name: Deploy to GitHub Pages
 
 on:
@@ -14,28 +14,19 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  check:
+  test:
     runs-on: ubuntu-latest
     permissions:
-      pages: read
-    outputs:
-      enabled: ${{ steps.pages.outputs.enabled }}
+      contents: read
     steps:
-      - name: Check whether GitHub Pages is enabled
-        id: pages
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if gh api "repos/${GITHUB_REPOSITORY}/pages" --silent; then
-            echo "enabled=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "::notice::GitHub Pages is not enabled. Set Settings > Pages > Source to GitHub Actions, then re-run this workflow."
-          fi
+      - uses: actions/checkout@v4
+      - name: Model tests
+        run: node --test tests/model.test.mjs
+      - name: Server tests
+        run: python3 -m unittest discover -s tests -v
 
   deploy:
-    needs: check
-    if: needs.check.outputs.enabled == 'true'
+    needs: test
     runs-on: ubuntu-latest
     permissions:
       contents: read

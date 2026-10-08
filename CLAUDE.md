@@ -7,7 +7,7 @@
 - `web/model.mjs`：字段、显示条件、必填规则（`REQUIRED_BY_DEPTH`）、协作建议（`recommend`）、人机交接（`handoff`）和简报文本（`brief`）。改表单内容主要改这里。
   - 选项标签以「待推荐 / 待估」结尾 = 交给 AI；以「待定 / 待确认」结尾 = 人还没决定（`intentOf`）。多选里具体选项和「待X」可以共存，分别归类。
   - 简报页问题的答复存在 `data.answers`，键为问题 id。
-- `web/app.js`：渲染、交互、localStorage 草稿、导入导出。
+- `web/app.js`：渲染、交互、localStorage 草稿、导入导出；在支持 WebMCP 的浏览器里注册只读工具 `read_project_kickoff`。
 - `server.py`：只监听 127.0.0.1，校验 Host/Origin，调用 Codex CLI。
 
 ## 关于仓库主人
