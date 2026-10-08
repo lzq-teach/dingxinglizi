@@ -7,6 +7,7 @@
 网址：https://lzq-teach.github.io/dingxinglizi/
 
 - 不用安装，打开即用。填写内容只保存在你自己的浏览器里，不会上传。
+- 浏览器按网站域名存数据：`lzq-teach.github.io` 下的其他网页（同一 GitHub 账号的其他 Pages 项目）能读到这里的草稿。不要在草稿里写密码、密钥等敏感信息。
 - 网页版不能「生成 AGENTS.md」（需要调用你电脑上的 Codex），其余功能都能用。
 - 每次合并到 `main`，网站会自动更新（`.github/workflows/pages.yml`）。首次使用需要仓库主人在 Settings → Pages 把 Source 设为「GitHub Actions」，然后在 Actions 里重新运行一次「Deploy to GitHub Pages」。
 
@@ -52,6 +53,7 @@
    - 生成时读取 `~/.codex/skills/focused-delivery/SKILL.md`，项目文件引用原路径以避免复制后过期。
    - Codex 或 skill 不在默认位置时，用环境变量 `KICKOFF_CODEX`、`KICKOFF_SKILL` 指定路径。
    - 生成中不重复调用，失败可重试；修改表单后需重新生成才能下载。
+   - 导入的备份不带 AGENTS.md 草案，需要在本机重新生成。
    - 生成结果是草案，可编辑后下载。放入新项目根目录使用；已有 `AGENTS.md` 应先合并，进行中的开发会话须显式重新读取。
 
 默认效率优先：先寻找并验证成熟方案，再做最小改造；「开发方式」可指定局部或重点定制。

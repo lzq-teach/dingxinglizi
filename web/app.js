@@ -72,13 +72,13 @@ document.addEventListener('click',e=>{const b=e.target.closest('button');if(!b)r
  if(b.dataset.openDraft){current=projects.find(p=>p.id===b.dataset.openDraft)||current;step=0;errors=[];persist(current,false);$('#draftDialog').close();render();setHash(true);return}
  if(b.dataset.deleteDraft){const target=projects.find(p=>p.id===b.dataset.deleteDraft);if(!target||!confirm(`删除草稿「${target.data.name.trim()||'未命名项目'}」？删除后无法恢复。`))return;removed.add(target.id);projects=projects.filter(p=>p!==target);if(current===target){current=projects[0]||{id:uid(),updated:new Date().toISOString(),data:blank()};if(!projects.includes(current))projects.push(current);step=0;errors=[];setHash(true)}persist(current,false);render();showDrafts();($('#draftList [data-open-draft]')||$('#closeDrafts')).focus()}
 });
-$('#importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>500000)throw Error('文件超过 500 KB');const raw=JSON.parse(await file.text());if(raw.app!=='project-kickoff'||raw.version!==VERSION)throw Error('不是受支持的项目备份');const issues=[],parsed=validProject({...raw.project,id:uid()},issues);const data=parsed.data;current={id:parsed.id,updated:new Date().toISOString(),data,agents:parsed.agents};if(current.agents)generated.set(current.id,current.agents);projects.push(current);step=0;errors=[];persist();render();$('#draftDialog').close();toast(issues.length?`已导入为新草稿，并按新版表单调整：${[...new Set(issues)].join('；')}`:'已导入为新草稿')}catch(err){toast(err instanceof SyntaxError?'导入失败：文件不是有效的 JSON 备份。':`导入失败：${err.message}`)}});
+$('#importFile').addEventListener('change',async e=>{const file=e.target.files[0];if(!file)return;try{if(file.size>500000)throw Error('文件超过 500 KB');const raw=JSON.parse(await file.text());if(raw.app!=='project-kickoff'||raw.version!==VERSION)throw Error('不是受支持的项目备份');const issues=[],parsed=validProject({...raw.project,id:uid()},issues);const data=parsed.data;current={id:parsed.id,updated:new Date().toISOString(),data,agents:null};projects.push(current);step=0;errors=[];persist();render();$('#draftDialog').close();toast(issues.length?`已导入为新草稿，并按新版表单调整：${[...new Set(issues)].join('；')}`:'已导入为新草稿')}catch(err){toast(err instanceof SyntaxError?'导入失败：文件不是有效的 JSON 备份。':`导入失败：${err.message}`)}});
 $('.brand').addEventListener('click',e=>{e.preventDefault();navigate(0)});
 render();if(storageError)$('#saveStatus').textContent='保存不可用 · 请导出';
 {const n=Number(location.hash.slice(1))-1;if(Number.isInteger(n)&&n>0&&n<=4)navigate(n,true)}
 // 生成 AGENTS.md 需要本机服务（server.py）调用 Codex；网页版没有这个服务，提前说明，而不是点了才报错。
 function serviceNote(){return localService?.offline?'网页版不能生成 AGENTS.md：需要在你的电脑上启动表单（见 README），由本机 Codex 生成。':localService&&!localService.available?'未检测到本机 Codex：安装并登录 Codex CLI 后，重新启动表单。':localService&&localService.skillAvailable===false?`找不到 focused-delivery 技能（${localService.skill}）：恢复该文件，或用环境变量 KICKOFF_SKILL 指定位置后重新启动表单。`:''}
-fetch('/api/status').then(r=>r.json()).then(s=>{localService=s}).catch(()=>{localService={available:false,offline:true}}).finally(()=>{const b=$('#generateAgents');if(b&&!generating&&serviceNote()){b.disabled=true;$('#agentsStatus').textContent=serviceNote()}});
+fetch('api/status').then(r=>r.json()).then(s=>{localService=s}).catch(()=>{localService={available:false,offline:true}}).finally(()=>{const b=$('#generateAgents');if(b&&!generating&&serviceNote()){b.disabled=true;$('#agentsStatus').textContent=serviceNote()}});
 const context=document.modelContext;
 if(context?.registerTool){try{Promise.resolve(context.registerTool({name:'read_project_kickoff',title:'读取项目简报',description:'读取当前表单、必填缺口、待人决定的问题和协作建议；不修改状态或发送消息。',inputSchema:{type:'object',properties:{},additionalProperties:false},annotations:{readOnlyHint:true,untrustedContentHint:true},execute(input){if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).length)throw Error('不接受参数');return {brief:brief(current.data),missingRequired:validate(current.data).map(e=>e.id),openQuestions:handoff(current.data).open.map(q=>q.q)}}})).catch(()=>{});}catch{}}
 
@@ -88,7 +88,7 @@ async function generateAgents(){
  const projectId=current.id, input=brief(current.data);
  generating=true;renderResult();
  try{
-  const r=await fetch('/api/generate-agents',{method:'POST',headers:{'Content-Type':'application/json','X-Kickoff-Request':'1'},body:JSON.stringify({brief:input})});
+  const r=await fetch('api/generate-agents',{method:'POST',headers:{'Content-Type':'application/json','X-Kickoff-Request':'1'},body:JSON.stringify({brief:input})});
   let result;try{result=await r.json()}catch{throw Error('请通过本机启动服务使用模型生成，独立 HTML 不支持此功能')}
   if(!r.ok)throw Error(result.error||'生成失败');
   if(typeof result.markdown!=='string')throw Error('生成结果无效');

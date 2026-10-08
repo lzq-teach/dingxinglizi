@@ -25,4 +25,17 @@ class ServerTests(unittest.TestCase):
   try:
    status,data=self.post({'brief':'x'*30});self.assertEqual(status,422);self.assertNotIn('markdown',data)
   finally:m.generate=old
+ def test_foreign_host_rejected_for_head_and_get(self):
+  for method in ('GET','HEAD'):
+   req=urllib.request.Request(self.url+'/',method=method,headers={'Host':'evil.example:80'})
+   with self.assertRaises(urllib.error.HTTPError) as cm: urllib.request.urlopen(req)
+   self.assertEqual(cm.exception.code,403,method)
+ def test_unexpected_value_error_not_leaked(self):
+  old=m.generate;m.generate=lambda _: (_ for _ in ()).throw(UnicodeEncodeError('utf-8','x',0,1,'surrogates not allowed'))
+  try:
+   status,data=self.post({'brief':'x'*30});self.assertEqual(status,422);self.assertNotIn('surrogates',data['error'])
+  finally:m.generate=old
+ def test_status_hides_home_directory(self):
+  with urllib.request.urlopen(self.url+'/api/status') as r: data=json.load(r)
+  self.assertNotIn(str(m.Path.home())+'/',data['skill'])
 if __name__=='__main__':unittest.main()

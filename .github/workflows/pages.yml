@@ -7,10 +7,7 @@ on:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -19,6 +16,8 @@ concurrency:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      pages: read
     outputs:
       enabled: ${{ steps.pages.outputs.enabled }}
     steps:
@@ -38,6 +37,10 @@ jobs:
     needs: check
     if: needs.check.outputs.enabled == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

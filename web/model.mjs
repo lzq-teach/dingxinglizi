@@ -63,10 +63,10 @@ export const isRequired=(f,d)=>f.required===true||has(REQUIRED_BY_DEPTH[d?.depth
 export const validate=d=>fields.filter(f=>visible(f,d)&&isRequired(f,d)&&!answered(d[f.id])).map(f=>({id:f.id,step:f.step,message:`请填写${f.label}`}));
 // 选项会随版本调整：已停用的选项只移除该项并记入 issues，不让整份草稿失效。
 export function normalize(input,issues=[]){if(!input||typeof input!=='object'||Array.isArray(input))throw Error('项目格式不正确');const d=blank();
- for(const f of fields){const v=input[f.id];if(v===undefined||v===null)continue;
+ for(const f of fields){let v=input[f.id];if(v===undefined||v===null)continue;
   if(f.kind==='multi'){if(!Array.isArray(v)){issues.push(`${f.label}格式无效，已清空`);continue}const kept=v.filter(x=>typeof x==='string'&&f.options.some(o=>o.value===x));if(kept.length<v.length)issues.push(`${f.label}中已停用的选项已移除`);d[f.id]=[...new Set(kept)]}
-  else{const max=f.max||5000;if(typeof v!=='string'){issues.push(`${f.label}格式无效，已清空`);continue}if(f.options&&v&&!f.options.some(o=>o.value===v)){issues.push(`${f.label}的选项已停用，已清空`);continue}if(v.length>max)issues.push(`${f.label}超出 ${max} 字，已截断`);d[f.id]=v.slice(0,max)}}
- const a=input.answers;if(a&&typeof a==='object'&&!Array.isArray(a))for(const [k,v] of Object.entries(a).slice(0,200))if(k.length<=100&&typeof v==='string')d.answers[k]=v.slice(0,2000);
+  else{const max=f.max||5000;if(typeof v!=='string'){issues.push(`${f.label}格式无效，已清空`);continue}v=v.toWellFormed?.()??v;if(f.options&&v&&!f.options.some(o=>o.value===v)){issues.push(`${f.label}的选项已停用，已清空`);continue}if(v.length>max)issues.push(`${f.label}超出 ${max} 字，已截断`);d[f.id]=v.slice(0,max)}}
+ const a=input.answers;if(a&&typeof a==='object'&&!Array.isArray(a))for(const [k,v] of Object.entries(a).slice(0,200))if(k.length<=100&&typeof v==='string')d.answers[k]=(v.toWellFormed?.()??v).slice(0,2000);
  return d}
 export function recommend(raw){const d={...blank(),...activeData(raw)},ai=isAI(d),pay=isPayment(d),auto=has(d.types,'automation'),legacy=['existing','replace'].includes(d.stage)||has(d.data,'legacy');
  let mode='范围与方案确认';
