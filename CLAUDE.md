@@ -19,7 +19,7 @@
 ## 规则
 
 - 本仓库是公开的，不提交密钥或个人数据。
-- 改动后运行 `node --test tests/model.test.mjs` 和 `python3 -m unittest discover -s tests -v`，并在浏览器里走一遍五个步骤。
+- 改动后运行 `node --test tests/model.test.mjs`、`python3 -m unittest discover -s tests -v` 和 `node tests/e2e.mjs`（浏览器走查；云端环境用 `PLAYWRIGHT_MODULE=/opt/node22/lib/node_modules/playwright/index.mjs`）。改了页面交互，就在 `tests/e2e.mjs` 里补对应检查。
 - 调整选项时不要复用已停用选项的 value；旧草稿里认不出的选项会被移除。
 - `web/index.html` 和 `web/app.js` 里引用页面文件时带 `?v=dev`，发布流程会把它换成提交号，避免浏览器混用新旧文件。新增页面文件引用时也要带上。
 - 保存草稿走 `persist()`：先读最新存储，只写回本页改动的那份，不要直接整体覆盖 localStorage。

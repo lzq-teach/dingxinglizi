@@ -82,7 +82,8 @@
 
 ```bash
 node --test tests/model.test.mjs          # 表单逻辑：必填规则、人机交接、旧草稿兼容、简报内容
-python3 -m unittest discover -s tests -v  # 本机服务：来源限制、并发限制、错误返回
+python3 -m unittest discover -s tests -v  # 本机服务：来源校验、并发限制、错误返回
+node tests/e2e.mjs                        # 浏览器走查（需要 Playwright：npm i -D playwright，或用 PLAYWRIGHT_MODULE 指向已安装的 playwright）
 ```
 
 ## 开发约定
