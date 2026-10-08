@@ -18,3 +18,9 @@
 @media print{.decision-actions{display:none}}
 /* Toasts never block clicks; on phones they sit above the sticky footer. */
 .toast{pointer-events:none}@media(max-width:700px){.toast{bottom:88px}}
+/* Audit fixes: readable contrast, long titles, focus never hidden behind sticky bars, choice groups without border glitches. */
+html{scroll-padding-bottom:96px}h1{overflow-wrap:anywhere}.page-heading h1{flex-shrink:0}main:focus{outline:none}
+.choice-set{border:0;padding:0;margin:0;min-width:0}.badge{color:#5a6880}.text-input{border-color:#8590a5}.text-input::placeholder{color:#6b7588}.choice-mark{border-color:#8590a5}
+button:focus-visible,a:focus-visible{outline-color:#3f63d6}.chip.selected{border-color:#4f6fd0;font-weight:600}.chip.selected::before{content:"✓ "}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+@media(max-width:700px){html{scroll-padding-top:76px}.page-heading{flex-wrap:wrap}#steps{padding:6px}}

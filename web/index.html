@@ -12,7 +12,8 @@
 <div class="layout"><aside class="sidebar"><nav id="steps" aria-label="填写步骤"></nav></aside>
 <main id="main" tabindex="-1"><div id="formView"></div><div id="resultView" hidden></div></main>
 </div>
-<div id="toast" role="status" class="toast" hidden></div>
-<dialog id="draftDialog"><div class="dialog-head"><h2>我的草稿</h2><button class="btn" id="closeDrafts">关闭</button></div><p class="muted">保存在当前浏览器。换设备或清理浏览器前，请导出备份。</p><div id="draftList"></div><div class="dialog-footer"><button class="btn" id="importBtn">导入 JSON</button><button class="btn" id="backupDraft">备份当前草稿</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></dialog>
+<div id="toast" class="toast" aria-hidden="true" hidden></div>
+<div id="live" class="sr-only" role="status" aria-live="polite"></div>
+<dialog id="draftDialog" aria-labelledby="draftTitle"><div class="dialog-head"><h2 id="draftTitle">我的草稿</h2><button class="btn" id="closeDrafts">关闭</button></div><p class="muted">保存在当前浏览器。换设备或清理浏览器前，请导出备份。</p><div id="draftList"></div><div class="dialog-footer"><button class="btn" id="importBtn">导入 JSON</button><button class="btn" id="backupDraft">备份当前草稿</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></dialog>
 <script type="module" src="app.js?v=dev"></script>
 </body></html>
