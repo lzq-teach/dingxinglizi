@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>开项 · 项目启动表单</title>
+<meta name="description" content="选出你的产品方向，生成项目需求简报与协作建议。">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%232e55d4'/%3E%3Cpath d='M9 9h14v4H13v10H9zm8 8h6v6h-6z' fill='white'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<header class="topbar"><a class="brand" href="#" aria-label="开项首页"><span class="brand-icon">开</span><strong>开项</strong><span class="brand-sub">项目启动表单</span></a><div class="header-actions"><span id="saveStatus" class="save-status" role="status">本机草稿</span><button id="draftsBtn" class="btn subtle">我的草稿</button><button id="newBtn" class="btn">新项目</button></div></header>
+<div class="layout"><aside class="sidebar"><nav id="steps" aria-label="填写步骤"></nav></aside>
+<main id="main" tabindex="-1"><div id="formView"></div><div id="resultView" hidden></div></main>
+</div>
+<div id="toast" role="status" class="toast" hidden></div>
+<dialog id="draftDialog"><div class="dialog-head"><h2>我的草稿</h2><button class="btn" id="closeDrafts">关闭</button></div><p class="muted">保存在当前浏览器。换设备或清理浏览器前，请导出备份。</p><div id="draftList"></div><div class="dialog-footer"><button class="btn" id="importBtn">导入 JSON</button><button class="btn" id="backupDraft">备份当前草稿</button><input id="importFile" type="file" accept=".json,application/json" hidden></div></dialog>
+<script type="module" src="app.js"></script>
+</body></html>
