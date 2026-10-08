@@ -4,16 +4,17 @@
 
 ## 快速开始
 
-双击 `启动表单.command`，或在仓库根目录运行：
+表单要先在你的电脑上启动一个小服务，再用浏览器打开。只需要 Python 3，不依赖第三方包。
 
-```bash
-python3 server.py
-```
+1. 启动服务（窗口保持打开，关掉窗口服务就停了）：
+   - **macOS**：双击 `启动表单.command`
+   - **Windows**：双击 `启动表单.bat`
+   - 或在仓库根目录运行 `python3 server.py`（Windows 上是 `py server.py`）
+2. 浏览器打开 http://127.0.0.1:8767/
 
-然后打开 http://127.0.0.1:8767/ 。端口可用环境变量 `KICKOFF_PORT` 修改。
+看到「无法访问此网站 / ERR_CONNECTION_REFUSED」说明服务没在运行，回到第 1 步。端口可用环境变量 `KICKOFF_PORT` 修改。
 
-- 只需要 Python 3，不依赖第三方包。
-- 直接打开 `web/index.html` 也能离线填写和导出简报，但「生成 AGENTS.md」必须通过本机服务使用。
+> 不能直接双击 `web/index.html` 打开：浏览器出于安全限制，不允许本地文件加载页面脚本，页面会是空白。
 
 ## 使用说明
 
@@ -41,6 +42,7 @@ python3 server.py
 ├── server.py            # 本机服务：提供页面，并调用 Codex 生成 AGENTS.md
 ├── tests/               # 本机服务的测试
 ├── 启动表单.command      # macOS 双击启动
+├── 启动表单.bat          # Windows 双击启动
 ├── .openai/hosting.json # 静态托管配置（发布 web/ 目录）
 └── LICENSE
 ```
