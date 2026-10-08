@@ -54,7 +54,7 @@ class Handler(SimpleHTTPRequestHandler):
         self.send_response(status); self.send_header('Content-Type','application/json; charset=utf-8'); self.send_header('Content-Length',str(len(blob))); self.send_header('Cache-Control','no-store'); self.end_headers(); self.wfile.write(blob)
     def do_GET(self):
         if not self.valid_host(): return self.reply(403,{'error':'无效访问来源'})
-        if self.path=='/api/status': return self.reply(200,{'available':Path(CODEX).is_file(),'provider':'本机 Codex','skill':str(SKILL)})
+        if self.path=='/api/status': return self.reply(200,{'available':Path(CODEX).is_file(),'provider':'本机 Codex','skill':str(SKILL),'skillAvailable':SKILL.is_file()})
         if self.path.startswith('/api/'): return self.reply(404,{'error':'接口不存在'})
         return super().do_GET()
     def do_POST(self):

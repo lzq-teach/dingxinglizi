@@ -68,3 +68,38 @@ test('简报包含交接各部分与 AI 工作规则', () => {
   for(const s of ['## 人已决定','## 交给 AI 决定','## 还没决定','## 需要人准备','## 开发阶段','## 给 AI 的工作规则'])assert.ok(md.includes(s),s);
   assert.ok(md.includes('- 页面清单：预约列表\n  预约详情'));
 });
+
+test('「其他 / 待推荐」只交给 AI，同时选的具体类型仍算人已决定', () => {
+  const h=handoff(base({types:['web','other'],flow:'a',pages:'b'}));
+  assert.equal(h.decided.find(x=>x.label==='产品类型').value,'网站 / Web 应用');
+  assert.ok(h.ai.some(s=>s.includes('推荐产品形态')));
+  assert.ok(!h.ai.some(s=>s.startsWith('产品类型')));
+});
+
+test('多选里具体值与「待定」混在一起时，具体值不会丢', () => {
+  const h=handoff(base({flow:'a',pages:'b',audience:['team','unsure']}));
+  assert.equal(h.decided.find(x=>x.label==='使用人群').value,'内部团队');
+  assert.ok(h.open.some(q=>q.id==='field:audience'));
+});
+
+test('答复写「还没想好」仍算没决定；交给 AI 的待定字段不再写「请定下来」', () => {
+  const d=base({flow:'a',pages:'b',audience:['unsure'],stage:'unsure',answers:{'field:audience':'还没想好。','field:stage':AI_DECIDES}});
+  const h=handoff(d);
+  assert.ok(h.open.some(q=>q.id==='field:audience'));
+  assert.ok(h.ai.includes('项目阶段：人已交给 AI 决定'));
+});
+
+test('带「（备注）」和「其他」的选项、原型却真实接入，都会追问', () => {
+  const ids=handoff(base({types:['agent'],flow:'a',pages:'b',features:['other'],customization:'custom',deadline:'date',integration:'real'})).questions.map(q=>q.id);
+  for(const id of ['feature-other','custom-scope','deadline-date','prototype-real'])assert.ok(ids.includes(id),id);
+});
+
+test('自动化工具没定执行权限时也会追问', () => {
+  assert.ok(handoff(base({types:['automation'],flow:'a',pages:'b'})).questions.some(q=>q.id==='auto-autonomy'));
+});
+
+test('用户文字不能在简报里伪造小节', () => {
+  const md=brief(base({flow:'a\n## 伪造\n---',pages:'b'}));
+  assert.ok(!md.split('\n').some(l=>/^\s{0,3}## 伪造/.test(l)));
+  assert.ok(!md.split('\n').some(l=>/^\s{0,3}---\s*$/.test(l)));
+});

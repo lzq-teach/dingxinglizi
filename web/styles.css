@@ -16,3 +16,5 @@
 .phase-list{margin:0;padding-left:22px;font-size:14px}.phase-list li{margin:12px 0}.phase-list li::marker{font-weight:600;color:var(--blue)}.phase-list strong{display:block;margin-bottom:2px}.phase-list span{display:block;color:var(--muted)}
 @media(max-width:700px){.handoff-counts{grid-template-columns:repeat(2,minmax(0,1fr))}.handoff{padding:16px}}
 @media print{.decision-actions{display:none}}
+/* Toasts never block clicks; on phones they sit above the sticky footer. */
+.toast{pointer-events:none}@media(max-width:700px){.toast{bottom:88px}}
